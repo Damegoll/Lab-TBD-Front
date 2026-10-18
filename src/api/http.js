@@ -1,13 +1,30 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 
+let onUnauthorized = () => {}
+
+export function setUnauthorizedHandler(fn) {
+  onUnauthorized = fn
+}
+
 async function request(path, options = {}) {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  const token = localStorage.getItem('token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers })
 
   if (!response.ok) {
-    throw new Error(`Error ${response.status} al llamar a ${path}`)
+    if (response.status === 401 && token) onUnauthorized()
+
+    let mensaje = `Error ${response.status}`
+    try {
+      const body = await response.json()
+      if (body?.message) mensaje = body.message
+    } catch {
+      // la respuesta no traía JSON: dejamos el mensaje genérico
+    }
+    if (response.status === 403) mensaje = 'No tienes permisos para esta acción'
+    throw new Error(mensaje)
   }
 
   // 204 No Content (por ejemplo, en DELETE)

@@ -23,14 +23,18 @@ export const useTareasStore = defineStore('tareas', () => {
     cargando.value = false
   }
 
-  async function crear(titulo, descripcion = '') {
-    const nueva = await ejecutar(() => http.post('/api/tareas', { titulo, descripcion }))
+  async function crear(titulo) {
+    const nueva = await ejecutar(() => http.post('/api/tareas', { titulo }))
     if (nueva) tareas.value.push(nueva)
   }
 
   async function alternar(tarea) {
     const actualizada = await ejecutar(() =>
-      http.put(`/api/tareas/${tarea.id}`, { ...tarea, completada: !tarea.completada }),
+      http.put(`/api/tareas/${tarea.id}`, {
+        titulo: tarea.titulo,
+        descripcion: tarea.descripcion,
+        completada: !tarea.completada,
+      }),
     )
     if (actualizada) {
       const i = tareas.value.findIndex((t) => t.id === tarea.id)

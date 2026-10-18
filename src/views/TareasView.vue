@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useTareasStore } from '@/stores/tareas'
+import { useAuthStore } from '@/stores/auth'
 
 const store = useTareasStore()
+const auth = useAuthStore()
 const titulo = ref('')
 
 onMounted(store.cargar)
@@ -33,7 +35,8 @@ async function agregar() {
         <input type="checkbox" :checked="tarea.completada" @change="store.alternar(tarea)" />
         {{ tarea.titulo }}
       </label>
-      <button class="borrar" @click="store.eliminar(tarea.id)">Eliminar</button>
+      <!-- Solo ADMIN puede eliminar (el backend también lo exige) -->
+      <button v-if="auth.esAdmin" class="borrar" @click="store.eliminar(tarea.id)">Eliminar</button>
     </li>
   </ul>
 </template>
