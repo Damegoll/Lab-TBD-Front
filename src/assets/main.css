@@ -1,175 +1,127 @@
 :root {
-  --bg: #f7f7f8;
-  --fg: #1f2328;
-  --muted: #6b7280;
-  --accent: #2563eb;
-  --danger: #dc2626;
-  --border: #e5e7eb;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
 }
 
 body {
-  margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
+  background: #f5f7f8;
 }
 
-.topbar {
+.page-container {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 32px clamp(16px, 3vw, 48px);
+}
+
+.brand-lockup {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0.9rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  min-height: 88px;
+  padding: 0 24px;
 }
 
-.topbar nav {
-  display: flex;
-  gap: 1rem;
+.brand-name {
+  color: #333f48;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
 }
 
-.topbar a {
-  color: var(--muted);
-  text-decoration: none;
+.brand-caption,
+.text-medium-emphasis {
+  color: #64727a;
 }
 
-.topbar a.router-link-exact-active {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.sesion {
-  margin-left: auto;
+.drawer-user {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
+  padding: 20px 24px;
 }
 
-.rol {
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0 0.35rem;
-}
-
-.container {
-  max-width: 640px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-}
-
-.tarjeta {
-  max-width: 380px;
-  margin: 3rem auto;
-  padding: 1.5rem;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.formulario {
+.drawer-user-details {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.formulario label {
+.page-heading {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-}
-
-.alterno {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-input:not([type='checkbox']) {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font: inherit;
-}
-
-.nueva {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.nueva input {
-  flex: 1;
-}
-
-button {
-  padding: 0.6rem 1rem;
-  border: 0;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
-  font: inherit;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-button.secundario {
-  background: transparent;
-  color: var(--fg);
-  border: 1px solid var(--border);
-  padding: 0.35rem 0.75rem;
-}
-
-button.borrar {
-  background: transparent;
-  color: var(--danger);
-  padding: 0.3rem 0.5rem;
-}
-
-.lista {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.lista li {
-  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.7rem 0.9rem;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  margin-bottom: 0.5rem;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.hecha {
-  text-decoration: line-through;
-  color: var(--muted);
+.page-heading h1 {
+  margin: 2px 0 6px;
+  color: #333f48;
 }
 
-.tabla {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
+.page-heading p {
+  margin: 0;
 }
 
-.tabla th,
-.tabla td {
-  text-align: left;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--border);
+.eyebrow {
+  color: #008f88;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.error {
-  color: var(--danger);
+.auth-page {
+  display: grid;
+  min-height: calc(100vh - 64px);
+  place-items: center;
+}
+
+.auth-card {
+  width: min(100%, 470px);
+}
+
+.battery-cell {
+  min-width: 120px;
+}
+
+.battery-cell .v-progress-linear {
+  max-width: 90px;
+}
+
+.v-data-table {
+  background: transparent;
+}
+
+.v-data-table-header__content {
+  font-weight: 650;
+}
+
+@media (max-width: 600px) {
+  .page-container {
+    padding: 22px 14px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .page-heading .v-btn {
+    align-self: stretch;
+  }
 }

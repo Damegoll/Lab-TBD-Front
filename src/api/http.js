@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080').replace(/\/$/, '')
 
 let onUnauthorized = () => {}
 
@@ -8,7 +8,8 @@ export function setUnauthorizedHandler(fn) {
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('token')
-  const headers = { 'Content-Type': 'application/json' }
+  const headers = { ...options.headers }
+  if (options.body) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers })
@@ -35,5 +36,6 @@ export const http = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
   put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
+  patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (path) => request(path, { method: 'DELETE' }),
 }

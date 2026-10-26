@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
-
 const username = ref('')
 const password = ref('')
 const error = ref(null)
@@ -16,7 +15,7 @@ async function enviar() {
   enviando.value = true
   try {
     await auth.login(username.value.trim(), password.value)
-    router.push({ name: 'tareas' })
+    await router.push({ name: 'vehiculos' })
   } catch (e) {
     error.value = e.message
   } finally {
@@ -26,20 +25,40 @@ async function enviar() {
 </script>
 
 <template>
-  <div class="tarjeta">
-    <h1>Iniciar sesión</h1>
-    <form class="formulario" @submit.prevent="enviar">
-      <label>
-        Usuario
-        <input v-model="username" autocomplete="username" required />
-      </label>
-      <label>
-        Contraseña
-        <input v-model="password" type="password" autocomplete="current-password" required />
-      </label>
-      <p v-if="error" class="error">{{ error }}</p>
-      <button type="submit" :disabled="enviando">Entrar</button>
-    </form>
-    <p class="alterno">¿No tienes cuenta? <RouterLink to="/registro">Regístrate</RouterLink></p>
-  </div>
+  <v-container class="auth-page" fluid>
+    <v-card class="auth-card pa-6 pa-sm-8" elevation="3">
+      <div class="text-center mb-6">
+        <v-avatar color="primary" size="58" class="mb-4">
+          <v-icon icon="mdi-bike-fast" color="white" size="30" />
+        </v-avatar>
+        <h1 class="text-h5 font-weight-bold">Bienvenido a MoviTBD</h1>
+        <p class="text-body-2 text-medium-emphasis mt-2">Inicia sesión para continuar</p>
+      </div>
+
+      <v-form class="d-flex flex-column ga-4" @submit.prevent="enviar">
+        <v-text-field
+          v-model="username"
+          label="Usuario"
+          autocomplete="username"
+          prepend-inner-icon="mdi-account-outline"
+          required
+        />
+        <v-text-field
+          v-model="password"
+          label="Contraseña"
+          type="password"
+          autocomplete="current-password"
+          prepend-inner-icon="mdi-lock-outline"
+          required
+        />
+        <v-alert v-if="error" type="error" variant="tonal" density="comfortable">{{ error }}</v-alert>
+        <v-btn type="submit" color="primary" size="large" :loading="enviando" block>Iniciar sesión</v-btn>
+      </v-form>
+
+      <p class="text-center text-body-2 mt-6 mb-0">
+        ¿No tienes cuenta?
+        <RouterLink class="text-primary font-weight-medium" to="/registro">Regístrate</RouterLink>
+      </p>
+    </v-card>
+  </v-container>
 </template>

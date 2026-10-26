@@ -1,27 +1,49 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import TareasView from '../views/TareasView.vue'
-import UsuariosView from '../views/UsuariosView.vue'
+
+const rolesOperativos = ['OPERADOR', 'ADMIN']
+const rolesValidos = ['USUARIO', ...rolesOperativos]
+
+function rutaInicio(auth) {
+  return auth.rol === 'USUARIO' ? { name: 'mi-cuenta' } : { name: 'vehiculos' }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
-    { path: '/registro', name: 'registro', component: RegisterView, meta: { guestOnly: true } },
+    { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
+    { path: '/registro', name: 'registro', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
     {
-      path: '/',
-      name: 'tareas',
-      component: TareasView,
-      meta: { requiresAuth: true, roles: ['USER', 'ADMIN'] },
+      path: '/vehiculos',
+      name: 'vehiculos',
+      component: () => import('../views/VehiculosView.vue'),
+      meta: { requiresAuth: true, roles: rolesOperativos },
+    },
+    {
+      path: '/tarifas',
+      name: 'tarifas',
+      component: () => import('../views/TarifasView.vue'),
+      meta: { requiresAuth: true, roles: rolesOperativos },
+    },
+    {
+      path: '/traslados',
+      name: 'traslados',
+      component: () => import('../views/TrasladosView.vue'),
+      meta: { requiresAuth: true, roles: rolesOperativos },
     },
     {
       path: '/usuarios',
       name: 'usuarios',
-      component: UsuariosView,
+      component: () => import('../views/UsuariosView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN'] },
     },
+    {
+      path: '/mi-cuenta',
+      name: 'mi-cuenta',
+      component: () => import('../views/MiCuentaView.vue'),
+      meta: { requiresAuth: true },
+    },
+    { path: '/', redirect: () => (useAuthStore().rol === 'USUARIO' ? '/mi-cuenta' : '/vehiculos') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
@@ -32,8 +54,12 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth && !auth.estaAutenticado) return { name: 'login' }
-  if (to.meta.guestOnly && auth.estaAutenticado) return { name: 'tareas' }
-  if (to.meta.roles && !to.meta.roles.includes(auth.rol)) return { name: 'tareas' }
+  if (auth.estaAutenticado && !rolesValidos.includes(auth.rol)) {
+    auth.logout()
+    return { name: 'login' }
+  }
+  if (to.meta.guestOnly && auth.estaAutenticado) return rutaInicio(auth)
+  if (to.meta.roles && !to.meta.roles.includes(auth.rol)) return rutaInicio(auth)
 })
 
 export default router

@@ -26,11 +26,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(username, password) {
-    guardar(await http.post('/api/auth/login', { username, password }))
+    guardar(await http.post('/api/v1/auth/login', { username, password }))
   }
 
-  async function registrar(username, password) {
-    guardar(await http.post('/api/auth/register', { username, password }))
+  async function registrar(datos) {
+    guardar(await http.post('/api/v1/auth/register', datos))
   }
 
   function logout() {
