@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { http } from '@/api/http'
 
 const vehiculos = ref([])
+const estaciones = ref([])
 const cargando = ref(false)
 const guardando = ref(false)
 const error = ref(null)
@@ -31,7 +32,17 @@ async function cargar() {
   cargando.value = true
   error.value = null
   try {
-    vehiculos.value = await http.get('/api/v1/vehiculos')
+    const [respuestaVehiculos, respuestaEstaciones] = await Promise.allSettled([
+      http.get('/api/v1/vehiculos'),
+      http.get('/api/v1/estaciones'),
+    ])
+    if (respuestaVehiculos.status === 'rejected') throw respuestaVehiculos.reason
+    vehiculos.value = respuestaVehiculos.value
+    if (respuestaEstaciones.status === 'fulfilled') {
+      estaciones.value = respuestaEstaciones.value.filter((estacion) => estacion.activa)
+    } else {
+      error.value = `No fue posible cargar las estaciones: ${respuestaEstaciones.reason.message}`
+    }
   } catch (e) {
     error.value = e.message
   } finally {
@@ -193,9 +204,6 @@ onMounted(cargar)
       <v-card-title class="pa-6 pb-2">{{ seleccionado ? 'Editar vehículo' : 'Nuevo vehículo' }}</v-card-title>
       <v-card-text class="pa-6 pt-3">
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
-        <v-alert v-if="!seleccionado" type="info" variant="tonal" density="comfortable" class="mb-4">
-          El back no ofrece listado de estaciones; ingresa el ID de una estación existente.
-        </v-alert>
         <v-form class="d-flex flex-column ga-3" @submit.prevent="guardar">
           <v-text-field v-model="formulario.codigo" label="Código" maxlength="40" required />
           <v-select v-if="!seleccionado" v-model="formulario.tipo" label="Tipo" :items="tipos" required />
@@ -207,12 +215,14 @@ onMounted(cargar)
             max="100"
             required
           />
-          <v-text-field
+          <v-select
             v-if="!seleccionado"
             v-model.number="formulario.estacionId"
-            label="ID de estación"
-            type="number"
-            min="1"
+            label="Estación"
+            :items="estaciones"
+            item-title="nombre"
+            item-value="id"
+            no-data-text="No hay estaciones activas"
             required
           />
           <div class="d-flex justify-end ga-2 mt-2">

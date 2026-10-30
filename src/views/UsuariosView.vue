@@ -9,6 +9,10 @@ const error = ref(null)
 const exito = ref(null)
 const dialogo = ref(false)
 const confirmando = ref(false)
+const resumenDialogo = ref(false)
+const cargandoResumen = ref(false)
+const errorResumen = ref(null)
+const resumenes = ref([])
 const seleccionado = ref(null)
 const formulario = ref({ username: '', nombre: '', email: '', password: '', rol: 'USUARIO' })
 const roles = ['USUARIO', 'OPERADOR', 'ADMIN']
@@ -103,6 +107,30 @@ async function desactivar() {
   }
 }
 
+async function verResumen(usuario) {
+  seleccionado.value = usuario
+  resumenes.value = []
+  errorResumen.value = null
+  resumenDialogo.value = true
+  cargandoResumen.value = true
+  try {
+    resumenes.value = await http.get(`/api/v1/usuarios/${usuario.id}/resumen-mensual`)
+  } catch (e) {
+    errorResumen.value = e.message
+  } finally {
+    cargandoResumen.value = false
+  }
+}
+
+function nombreMes(anio, mes) {
+  return new Intl.DateTimeFormat('es-CL', { month: 'long', year: 'numeric' })
+    .format(new Date(Number(anio), Number(mes) - 1, 1))
+}
+
+function formatoDinero(monto) {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 2 }).format(Number(monto ?? 0))
+}
+
 onMounted(cargar)
 </script>
 
@@ -116,7 +144,7 @@ onMounted(cargar)
     <v-btn color="primary" prepend-icon="mdi-account-plus" @click="abrirCrear">Nuevo usuario</v-btn>
   </div>
 
-  <v-alert v-if="error && !dialogo && !confirmando" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
+  <v-alert v-if="error && !dialogo && !confirmando && !resumenDialogo" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
   <v-alert v-if="exito" type="success" variant="tonal" closable class="mb-4">{{ exito }}</v-alert>
 
   <v-card>
@@ -131,6 +159,7 @@ onMounted(cargar)
       </template>
       <template #item.acciones="{ item }">
         <div class="d-flex justify-end ga-1">
+          <v-btn icon="mdi-chart-box-outline" size="small" variant="text" aria-label="Ver resumen mensual" @click="verResumen(item)" />
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" aria-label="Editar usuario" @click="abrirEditar(item)" />
           <v-btn
             v-if="item.activo"
@@ -192,6 +221,31 @@ onMounted(cargar)
         <v-spacer />
         <v-btn variant="text" @click="confirmando = false">Cancelar</v-btn>
         <v-btn color="error" :loading="guardando" @click="desactivar">Desactivar</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="resumenDialogo" max-width="680">
+    <v-card>
+      <v-card-title class="pa-6 pb-2">Resumen mensual · {{ seleccionado?.username }}</v-card-title>
+      <v-card-text class="pa-6 pt-3">
+        <v-alert v-if="errorResumen" type="error" variant="tonal">{{ errorResumen }}</v-alert>
+        <v-skeleton-loader v-else-if="cargandoResumen" type="list-item-three-line, list-item-three-line" />
+        <v-row v-else-if="resumenes.length">
+          <v-col v-for="resumen in resumenes" :key="`${resumen.anio}-${resumen.mes}`" cols="12" sm="6">
+            <v-card variant="tonal" class="pa-4">
+              <div class="eyebrow mb-2">{{ nombreMes(resumen.anio, resumen.mes) }}</div>
+              <div class="summary-metric"><span>Viajes</span><strong>{{ resumen.cantidadViajes ?? 0 }}</strong></div>
+              <div class="summary-metric"><span>Minutos</span><strong>{{ Number(resumen.minutosTotales ?? 0).toLocaleString('es-CL', { maximumFractionDigits: 1 }) }}</strong></div>
+              <div class="summary-metric"><span>Gasto</span><strong>{{ formatoDinero(resumen.gastoTotal) }}</strong></div>
+            </v-card>
+          </v-col>
+        </v-row>
+        <p v-else class="text-medium-emphasis">No hay resúmenes mensuales para este usuario.</p>
+      </v-card-text>
+      <v-card-actions class="px-6 pb-5">
+        <v-spacer />
+        <v-btn variant="text" @click="resumenDialogo = false">Cerrar</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

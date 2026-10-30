@@ -14,10 +14,34 @@ const router = createRouter({
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
     { path: '/registro', name: 'registro', component: () => import('../views/RegisterView.vue'), meta: { guestOnly: true } },
     {
+      path: '/estaciones',
+      name: 'estaciones',
+      component: () => import('../views/EstacionesView.vue'),
+      meta: { requiresAuth: true, roles: rolesOperativos },
+    },
+    {
+      path: '/estaciones-disponibles',
+      name: 'estaciones-disponibles',
+      component: () => import('../views/EstacionesDisponiblesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/vehiculos',
       name: 'vehiculos',
       component: () => import('../views/VehiculosView.vue'),
       meta: { requiresAuth: true, roles: rolesOperativos },
+    },
+    {
+      path: '/billeteras',
+      name: 'billeteras',
+      component: () => import('../views/BilleterasView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/viajes',
+      name: 'viajes',
+      component: () => import('../views/ViajesView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/tarifas',

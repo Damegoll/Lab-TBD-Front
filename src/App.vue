@@ -11,11 +11,20 @@ const links = computed(() => {
   if (!auth.estaAutenticado) return []
 
   if (auth.rol === 'USUARIO') {
-    return [{ title: 'Mi cuenta', icon: 'mdi-account', to: '/mi-cuenta' }]
+    return [
+      { title: 'Mi cuenta', icon: 'mdi-account', to: '/mi-cuenta' },
+      { title: 'Mi billetera', icon: 'mdi-wallet-outline', to: '/billeteras' },
+      { title: 'Mis viajes', icon: 'mdi-bike-fast', to: '/viajes' },
+      { title: 'Estaciones disponibles', icon: 'mdi-map-marker-radius', to: '/estaciones-disponibles' },
+    ]
   }
 
   const items = [
+    { title: 'Estaciones', icon: 'mdi-map-marker-multiple', to: '/estaciones' },
+    { title: 'Disponibilidad', icon: 'mdi-map-marker-radius', to: '/estaciones-disponibles' },
     { title: 'Vehículos', icon: 'mdi-scooter', to: '/vehiculos' },
+    { title: 'Billeteras', icon: 'mdi-wallet-outline', to: '/billeteras' },
+    { title: 'Viajes', icon: 'mdi-bike-fast', to: '/viajes' },
     { title: 'Tarifas', icon: 'mdi-currency-usd', to: '/tarifas' },
     { title: 'Traslados', icon: 'mdi-swap-horizontal', to: '/traslados' },
   ]

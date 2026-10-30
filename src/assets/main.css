@@ -102,6 +102,33 @@ body {
   max-width: 90px;
 }
 
+.availability-row,
+.summary-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.availability-label,
+.summary-metric span {
+  flex: 1;
+  color: #64727a;
+}
+
+.summary-metric {
+  border-top: 1px solid #e6eaec;
+}
+
+.wallet-balance-card {
+  color: #fff;
+  background: linear-gradient(135deg, #00a99f, #008f88);
+}
+
+.wallet-balance-card .text-body-2 {
+  opacity: 0.9;
+}
+
 .v-data-table {
   background: transparent;
 }

@@ -23,15 +23,16 @@ El front consume los endpoints presentes en el back:
 
 | Pantalla | Funcionalidad | Roles |
 |---|---|---|
+| Estaciones | Listar, crear, editar y desactivar; disponibilidad agrupada por tipo de vehículo | `OPERADOR`, `ADMIN`; disponibilidad: todos |
 | Vehículos | Listar, crear, editar código/batería, cambiar estado y consultar auditoría | `OPERADOR`, `ADMIN` |
+| Billeteras | Consultar saldo e historial propio; staff lista billeteras y registra abonos/cargos; admin crea/desactiva | Usuarios: propia; ajustes: `OPERADOR`, `ADMIN`; administración: `ADMIN` |
+| Viajes | Usuario inicia, finaliza, cancela y consulta sus viajes; staff consulta la lista completa | Usuario dueño; consulta general: `OPERADOR`, `ADMIN` |
 | Tarifas | Listar, crear y desactivar | `OPERADOR`, `ADMIN` |
 | Traslados | Listar y crear órdenes de rebalanceo | `OPERADOR`, `ADMIN` |
-| Usuarios | Listar, crear, editar y desactivar | `ADMIN` |
-| Mi cuenta | Consultar el perfil autenticado | Todos |
+| Usuarios | Listar, crear, editar y desactivar; consultar resumen mensual por usuario | `ADMIN` |
+| Mi cuenta | Consultar perfil y resumen mensual propio de viajes | Todos |
 
-La API actual no expone gestión/listado de estaciones, billeteras o viajes, ni endpoints de vehículos disponibles por estación o resumen mensual. Esas pantallas/acciones se dejan fuera para no simular operaciones que el servidor no ofrece. Las pantallas de vehículos y traslados solicitan el ID de estación manualmente porque tampoco existe un endpoint para listar estaciones.
-
-En resumen y en el estado actual que se escribe esto, no esta completo el CRUD, esto será arreglado a futuro
+La API actual permite desactivar (no borrar físicamente) estaciones y billeteras, y no ofrece actualización directa de billeteras ni CRUD genérico de viajes. Los viajes se inician, finalizan y cancelan con sus acciones específicas. La vista de usuario muestra disponibilidad por tipo y batería promedio. Para iniciar un viaje se ingresa el ID del vehículo: el endpoint de disponibilidad entrega cantidades, no los IDs de vehículos. El resumen mensual se consume desde el endpoint autenticado del propio usuario o, para `ADMIN`, desde el resumen del usuario seleccionado. No se validan los cálculos contra datos de base de datos desde el front.
 
 ## Autenticación y permisos
 

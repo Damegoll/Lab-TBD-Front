@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { http } from '@/api/http'
 
 const traslados = ref([])
+const estaciones = ref([])
 const cargando = ref(false)
 const guardando = ref(false)
 const error = ref(null)
@@ -25,7 +26,17 @@ async function cargar() {
   cargando.value = true
   error.value = null
   try {
-    traslados.value = await http.get('/api/v1/ordenes-traslado')
+    const [respuestaTraslados, respuestaEstaciones] = await Promise.allSettled([
+      http.get('/api/v1/ordenes-traslado'),
+      http.get('/api/v1/estaciones'),
+    ])
+    if (respuestaTraslados.status === 'rejected') throw respuestaTraslados.reason
+    traslados.value = respuestaTraslados.value
+    if (respuestaEstaciones.status === 'fulfilled') {
+      estaciones.value = respuestaEstaciones.value.filter((estacion) => estacion.activa)
+    } else {
+      error.value = `No fue posible cargar las estaciones: ${respuestaEstaciones.reason.message}`
+    }
   } catch (e) {
     error.value = e.message
   } finally {
@@ -112,23 +123,24 @@ onMounted(cargar)
     <v-card>
       <v-card-title class="pa-6 pb-2">Nuevo traslado</v-card-title>
       <v-card-text class="pa-6 pt-3">
-        <v-alert type="info" variant="tonal" density="comfortable" class="mb-4">
-          El back no ofrece listado de estaciones; ingresa sus IDs existentes.
-        </v-alert>
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
         <v-form class="d-flex flex-column ga-3" @submit.prevent="crear">
-          <v-text-field
+          <v-select
             v-model.number="formulario.estacionOrigenId"
-            label="ID de estación de origen"
-            type="number"
-            min="1"
+            label="Estación de origen"
+            :items="estaciones"
+            item-title="nombre"
+            item-value="id"
+            no-data-text="No hay estaciones activas"
             required
           />
-          <v-text-field
+          <v-select
             v-model.number="formulario.estacionDestinoId"
-            label="ID de estación de destino"
-            type="number"
-            min="1"
+            label="Estación de destino"
+            :items="estaciones"
+            item-title="nombre"
+            item-value="id"
+            no-data-text="No hay estaciones activas"
             required
           />
           <v-select v-model="formulario.tipoVehiculo" label="Tipo de vehículo" :items="tipos" required />
