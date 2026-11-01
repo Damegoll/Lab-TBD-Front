@@ -64,14 +64,25 @@ async function guardar() {
   error.value = null
   exito.value = null
   const { username, nombre, email, password, rol } = formulario.value
-  if (!nombre.trim() || !email.trim() || !rol || (!seleccionado.value && (!username.trim() || password.length < 12))) {
-    error.value = 'Completa los campos obligatorios. La contraseña debe tener al menos 12 caracteres.'
+  if (
+    !nombre.trim()
+    || !email.trim()
+    || !rol
+    || (!seleccionado.value && (!username.trim() || password.length < 12))
+    || (password && (password.length < 12 || password.length > 72))
+  ) {
+    error.value = 'Completa los campos obligatorios. Si defines una contraseña, debe tener al menos 12 caracteres.'
     return
   }
   guardando.value = true
   try {
     if (seleccionado.value) {
-      await http.put(`/api/v1/usuarios/${seleccionado.value.id}`, { nombre, email, rol })
+      await http.put(`/api/v1/usuarios/${seleccionado.value.id}`, {
+        nombre,
+        email,
+        rol,
+        ...(password ? { password } : {}),
+      })
     } else {
       await http.post('/api/v1/usuarios', { username, nombre, email, password, rol })
     }
@@ -194,13 +205,12 @@ onMounted(cargar)
           <v-text-field v-model="formulario.nombre" label="Nombre" maxlength="100" required />
           <v-text-field v-model="formulario.email" label="Correo" type="email" maxlength="254" required />
           <v-text-field
-            v-if="!seleccionado"
             v-model="formulario.password"
-            label="Contraseña (mínimo 12 caracteres)"
+            :label="seleccionado ? 'Nueva contraseña (opcional, mínimo 12 caracteres)' : 'Contraseña (mínimo 12 caracteres)'"
             type="password"
-            minlength="12"
+            :minlength="seleccionado ? undefined : 12"
             maxlength="72"
-            required
+            :required="!seleccionado"
           />
           <v-select v-model="formulario.rol" label="Rol" :items="roles" required />
           <div class="d-flex justify-end ga-2 mt-2">

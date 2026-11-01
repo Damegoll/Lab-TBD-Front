@@ -7,7 +7,11 @@ const auth = useAuthStore()
 const esStaff = computed(() => auth.rol === 'OPERADOR' || auth.esAdmin)
 const viajes = ref([])
 const estacionesDisponibles = ref([])
+const estaciones = ref([])
+const vehiculos = ref([])
+const usuarios = ref([])
 const errorDisponibilidad = ref(null)
+const errorReferencias = ref(null)
 const cargando = ref(false)
 const guardando = ref(false)
 const error = ref(null)
@@ -17,11 +21,12 @@ const viajeFinalizar = ref(null)
 const viajeCancelar = ref(null)
 const vehiculoId = ref(null)
 const estacionDestinoId = ref(null)
+const usarIdDestino = ref(false)
 
 const encabezados = [
   { title: 'Viaje', key: 'id' },
-  { title: 'Usuario ID', key: 'usuarioId' },
-  { title: 'Vehículo ID', key: 'vehiculoId' },
+  { title: 'Usuario', key: 'usuarioId' },
+  { title: 'Vehículo', key: 'vehiculoId' },
   { title: 'Origen', key: 'estacionOrigenId' },
   { title: 'Destino', key: 'estacionDestinoId' },
   { title: 'Inicio', key: 'iniciadoEn' },
@@ -31,14 +36,29 @@ const encabezados = [
   { title: 'Acciones', key: 'acciones', sortable: false, align: 'end' },
 ]
 
+const destinosDisponibles = computed(() => {
+  const porId = new Map()
+  for (const estacion of estacionesDisponibles.value) {
+    porId.set(estacion.estacionId, {
+      id: estacion.estacionId,
+      nombre: estacion.estacionNombre,
+    })
+  }
+  return [...porId.values()]
+})
+
 async function cargar() {
   cargando.value = true
   error.value = null
   errorDisponibilidad.value = null
+  errorReferencias.value = null
   try {
-    const [respuestaViajes, respuestaDisponibles] = await Promise.allSettled([
+    const [respuestaViajes, respuestaDisponibles, respuestaEstaciones, respuestaVehiculos, respuestaUsuarios] = await Promise.allSettled([
       http.get(esStaff.value ? '/api/v1/viajes' : '/api/v1/viajes/me'),
       esStaff.value ? Promise.resolve([]) : http.get('/api/v1/estaciones/disponibles'),
+      esStaff.value ? http.get('/api/v1/estaciones') : Promise.resolve([]),
+      esStaff.value ? http.get('/api/v1/vehiculos') : Promise.resolve([]),
+      auth.esAdmin ? http.get('/api/v1/usuarios') : Promise.resolve([]),
     ])
     if (respuestaViajes.status === 'rejected') throw respuestaViajes.reason
     viajes.value = respuestaViajes.value
@@ -46,6 +66,18 @@ async function cargar() {
       estacionesDisponibles.value = respuestaDisponibles.value
     } else {
       errorDisponibilidad.value = respuestaDisponibles.reason.message
+    }
+    if (respuestaEstaciones.status === 'fulfilled') estaciones.value = respuestaEstaciones.value
+    if (respuestaVehiculos.status === 'fulfilled') vehiculos.value = respuestaVehiculos.value
+    if (respuestaUsuarios.status === 'fulfilled') usuarios.value = respuestaUsuarios.value
+    const fallosReferencias = [
+      ['estaciones', respuestaEstaciones],
+      ['vehículos', respuestaVehiculos],
+      ['usuarios', respuestaUsuarios],
+    ].filter(([, respuesta]) => respuesta.status === 'rejected')
+      .map(([recurso, respuesta]) => `${recurso}: ${respuesta.reason.message}`)
+    if (fallosReferencias.length) {
+      errorReferencias.value = `No fue posible cargar algunos nombres de referencia (${fallosReferencias.join('; ')}).`
     }
   } catch (e) {
     error.value = e.message
@@ -58,6 +90,24 @@ function abrirInicio() {
   vehiculoId.value = null
   error.value = null
   dialogoInicio.value = true
+}
+
+function nombreVehiculo(id) {
+  const vehiculo = vehiculos.value.find((item) => item.id === id)
+  return vehiculo ? `${vehiculo.codigo} · ${vehiculo.tipo}` : `Vehículo #${id}`
+}
+
+function nombreEstacion(id) {
+  if (id == null) return '—'
+  const estacion = estaciones.value.find((item) => item.id === id)
+  if (estacion) return estacion.nombre
+  const disponible = destinosDisponibles.value.find((item) => item.id === id)
+  return disponible?.nombre ?? `Estación #${id}`
+}
+
+function nombreUsuario(id) {
+  const usuario = usuarios.value.find((item) => item.id === id)
+  return usuario ? `${usuario.nombre} (${usuario.username})` : `Usuario #${id}`
 }
 
 async function iniciar() {
@@ -83,6 +133,7 @@ async function iniciar() {
 function abrirFinalizar(viaje) {
   viajeFinalizar.value = viaje
   estacionDestinoId.value = null
+  usarIdDestino.value = false
   error.value = null
 }
 
@@ -172,10 +223,11 @@ onMounted(cargar)
   <v-alert v-if="errorDisponibilidad" type="error" variant="tonal" class="mb-4">
     No se pudo cargar la disponibilidad de estaciones: {{ errorDisponibilidad }}
   </v-alert>
+  <v-alert v-if="errorReferencias" type="warning" variant="tonal" class="mb-4">{{ errorReferencias }}</v-alert>
   <v-alert v-if="aviso" type="success" variant="tonal" closable class="mb-4">{{ aviso }}</v-alert>
 
   <v-alert v-if="!esStaff" type="info" variant="tonal" icon="mdi-information-outline" class="mb-4">
-    Para iniciar un viaje, ingresa el ID del vehículo. La API actual entrega disponibilidad agregada por estación, no el listado de vehículos disponibles.
+    Para iniciar un viaje, ingresa el ID del vehículo: la API solo devuelve disponibilidad agregada y no expone vehículos identificables a usuarios.
   </v-alert>
 
   <v-row v-if="!esStaff && estacionesDisponibles.length" class="mb-2">
@@ -206,6 +258,10 @@ onMounted(cargar)
       item-value="id"
       :items-per-page="10"
     >
+      <template #item.usuarioId="{ value }">{{ nombreUsuario(value) }}</template>
+      <template #item.vehiculoId="{ value }">{{ nombreVehiculo(value) }}</template>
+      <template #item.estacionOrigenId="{ value }">{{ nombreEstacion(value) }}</template>
+      <template #item.estacionDestinoId="{ value }">{{ nombreEstacion(value) }}</template>
       <template #item.iniciadoEn="{ value }">{{ formatoFecha(value) }}</template>
       <template #item.finalizadoEn="{ value }">{{ formatoFecha(value) }}</template>
       <template #item.costo="{ value }">{{ formatoDinero(value) }}</template>
@@ -249,7 +305,31 @@ onMounted(cargar)
       <v-card-text class="pa-6 pt-3">
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
         <v-form @submit.prevent="finalizar">
-          <v-text-field v-model.number="estacionDestinoId" label="ID de estación de destino" type="number" min="1" required />
+          <v-select
+            v-if="destinosDisponibles.length && !usarIdDestino"
+            v-model.number="estacionDestinoId"
+            label="Estación de destino"
+            :items="destinosDisponibles"
+            item-title="nombre"
+            item-value="id"
+            required
+          />
+          <v-text-field
+            v-else
+            v-model.number="estacionDestinoId"
+            label="ID de estación de destino"
+            type="number"
+            min="1"
+            required
+          />
+          <div v-if="destinosDisponibles.length" class="d-flex justify-end">
+            <v-btn variant="text" size="small" @click="usarIdDestino = !usarIdDestino; estacionDestinoId = null">
+              {{ usarIdDestino ? 'Elegir estación disponible' : 'Ingresar ID de otra estación' }}
+            </v-btn>
+          </div>
+          <p v-if="destinosDisponibles.length && !usarIdDestino" class="text-caption text-medium-emphasis">
+            Solo se pueden mostrar por nombre las estaciones incluidas en la disponibilidad de la API.
+          </p>
           <div class="d-flex justify-end ga-2 mt-4">
             <v-btn variant="text" @click="viajeFinalizar = null">Cancelar</v-btn>
             <v-btn type="submit" color="primary" :loading="guardando">Finalizar</v-btn>

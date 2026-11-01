@@ -24,15 +24,18 @@ El front consume los endpoints presentes en el back:
 | Pantalla | Funcionalidad | Roles |
 |---|---|---|
 | Estaciones | Listar, crear, editar y desactivar; disponibilidad agrupada por tipo de vehículo | `OPERADOR`, `ADMIN`; disponibilidad: todos |
-| Vehículos | Listar, crear, editar código/batería, cambiar estado y consultar auditoría | `OPERADOR`, `ADMIN` |
-| Billeteras | Consultar saldo e historial propio; staff lista billeteras y registra abonos/cargos; admin crea/desactiva | Usuarios: propia; ajustes: `OPERADOR`, `ADMIN`; administración: `ADMIN` |
+| Vehículos | Listar, crear, editar código/batería, cambiar estado, dar de baja con motivo y consultar auditoría | `OPERADOR`, `ADMIN` |
+| Billeteras | Consultar saldo e historial propio; staff ajusta el saldo con motivo; admin crea/desactiva | Usuarios: propia; ajustes: `OPERADOR`, `ADMIN`; administración: `ADMIN` |
 | Viajes | Usuario inicia, finaliza, cancela y consulta sus viajes; staff consulta la lista completa | Usuario dueño; consulta general: `OPERADOR`, `ADMIN` |
-| Tarifas | Listar, crear y desactivar | `OPERADOR`, `ADMIN` |
-| Traslados | Listar y crear órdenes de rebalanceo | `OPERADOR`, `ADMIN` |
+| Tarifas | Listar, crear, editar y desactivar | `OPERADOR`, `ADMIN` |
+| Traslados | Listar y crear órdenes; ajustar su cantidad con actualización coordinada de flota o revertirlas si el inventario lo permite | `OPERADOR`, `ADMIN` |
 | Usuarios | Listar, crear, editar y desactivar; consultar resumen mensual por usuario | `ADMIN` |
+| Auditorías | Consultar historial; crear, editar y eliminar registros manualmente | Lectura: `OPERADOR`, `ADMIN`; mantenimiento: `ADMIN` |
 | Mi cuenta | Consultar perfil y resumen mensual propio de viajes | Todos |
 
-La API actual permite desactivar (no borrar físicamente) estaciones y billeteras, y no ofrece actualización directa de billeteras ni CRUD genérico de viajes. Los viajes se inician, finalizan y cancelan con sus acciones específicas. La vista de usuario muestra disponibilidad por tipo y batería promedio. Para iniciar un viaje se ingresa el ID del vehículo: el endpoint de disponibilidad entrega cantidades, no los IDs de vehículos. El resumen mensual se consume desde el endpoint autenticado del propio usuario o, para `ADMIN`, desde el resumen del usuario seleccionado. No se validan los cálculos contra datos de base de datos desde el front.
+Las operaciones respetan las reglas de dominio del backend, no son borrados físicos genéricos: los vehículos se dan de baja lógicamente, los cambios de saldo generan movimientos contables, los viajes se finalizan o cancelan con acciones específicas y los traslados solo se ajustan/revierten cuando el inventario permite aplicar la operación coordinada. Los movimientos contables siguen siendo de solo registro. La pantalla de auditorías permite mantenimiento manual y altera el historial, por lo que está limitada a `ADMIN`.
+
+La vista de usuario muestra la disponibilidad agregada por estación. La API no expone a `USUARIO` un listado identificable de vehículos, por lo que iniciar un viaje todavía requiere el ID del vehículo. Para destinos se muestran nombres de estaciones devueltos por disponibilidad, pero la API no entrega el catálogo completo de estaciones al usuario; se conserva el ingreso por ID para los demás destinos. En las vistas de staff, el front resuelve nombres de estaciones y vehículos; el nombre del usuario solo está disponible en la vista de viajes para `ADMIN`, ya que la API restringe el catálogo de usuarios. El resumen mensual se consume desde el endpoint autenticado del propio usuario o, para `ADMIN`, desde el resumen del usuario seleccionado. Los errores técnicos conocidos se sustituyen por mensajes orientados al usuario; la API debería devolver errores de dominio estables para que esa traducción sea completa. No se ejecutan operaciones contra la base de datos para validar el front.
 
 ## Autenticación y permisos
 

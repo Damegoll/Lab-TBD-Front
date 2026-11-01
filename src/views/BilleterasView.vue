@@ -122,18 +122,28 @@ function abrirAjuste(billetera, tipo) {
 async function guardarAjuste() {
   error.value = null
   const monto = Number(ajuste.value.monto)
-  if (!Number.isFinite(monto) || monto <= 0 || !ajuste.value.motivo.trim()) {
-    error.value = 'Ingresa un monto mayor que cero y el motivo del movimiento.'
+  const permiteCero = ajuste.value.tipo === 'SALDO'
+  if (!Number.isFinite(monto) || monto < 0 || (!permiteCero && monto === 0) || !ajuste.value.motivo.trim()) {
+    error.value = `${permiteCero ? 'Ingresa un saldo igual o mayor que cero' : 'Ingresa un monto mayor que cero'} y el motivo del movimiento.`
     return
   }
   guardando.value = true
   try {
-    await http.patch(
-      `/api/v1/billeteras/${seleccionada.value.id}/movimientos/${ajuste.value.tipo}`,
-      { monto, motivo: ajuste.value.motivo.trim() },
-    )
+    if (ajuste.value.tipo === 'SALDO') {
+      await http.put(`/api/v1/billeteras/${seleccionada.value.id}`, {
+        saldo: monto,
+        motivo: ajuste.value.motivo.trim(),
+      })
+    } else {
+      await http.patch(
+        `/api/v1/billeteras/${seleccionada.value.id}/movimientos/${ajuste.value.tipo}`,
+        { monto, motivo: ajuste.value.motivo.trim() },
+      )
+    }
     dialogoAjuste.value = false
-    aviso.value = ajuste.value.tipo === 'ABONO' ? 'Abono registrado.' : 'Cargo registrado.'
+    aviso.value = ajuste.value.tipo === 'SALDO'
+      ? 'Saldo actualizado y movimiento contable registrado.'
+      : ajuste.value.tipo === 'ABONO' ? 'Abono registrado.' : 'Cargo registrado.'
     await cargar()
   } catch (e) {
     error.value = e.message
@@ -215,6 +225,14 @@ onMounted(cargar)
                 color="secondary"
                 aria-label="Registrar cargo"
                 @click="abrirAjuste(item, 'CARGO')"
+              />
+              <v-btn
+                v-if="item.activa"
+                icon="mdi-pencil-outline"
+                size="small"
+                variant="text"
+                aria-label="Editar saldo"
+                @click="abrirAjuste(item, 'SALDO')"
               />
               <v-btn
                 v-if="auth.esAdmin && item.activa"
@@ -309,11 +327,20 @@ onMounted(cargar)
 
   <v-dialog v-model="dialogoAjuste" max-width="480">
     <v-card>
-      <v-card-title class="pa-6 pb-2">{{ ajuste.tipo === 'ABONO' ? 'Registrar abono' : 'Registrar cargo' }}</v-card-title>
+      <v-card-title class="pa-6 pb-2">
+        {{ ajuste.tipo === 'SALDO' ? 'Editar saldo' : ajuste.tipo === 'ABONO' ? 'Registrar abono' : 'Registrar cargo' }}
+      </v-card-title>
       <v-card-text class="pa-6 pt-3">
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
         <v-form class="d-flex flex-column ga-3" @submit.prevent="guardarAjuste">
-          <v-text-field v-model.number="ajuste.monto" label="Monto" type="number" min="0.01" step="0.01" required />
+          <v-text-field
+            v-model.number="ajuste.monto"
+            :label="ajuste.tipo === 'SALDO' ? 'Nuevo saldo' : 'Monto'"
+            type="number"
+            :min="ajuste.tipo === 'SALDO' ? 0 : 0.01"
+            step="0.01"
+            required
+          />
           <v-textarea v-model="ajuste.motivo" label="Motivo" maxlength="500" rows="3" required />
           <div class="d-flex justify-end ga-2 mt-2">
             <v-btn variant="text" @click="dialogoAjuste = false">Cancelar</v-btn>

@@ -29,7 +29,12 @@ const links = computed(() => {
     { title: 'Traslados', icon: 'mdi-swap-horizontal', to: '/traslados' },
   ]
 
-  if (auth.esAdmin) items.push({ title: 'Usuarios', icon: 'mdi-account-group', to: '/usuarios' })
+  if (auth.esAdmin) {
+    items.push(
+      { title: 'Usuarios', icon: 'mdi-account-group', to: '/usuarios' },
+      { title: 'Auditorías', icon: 'mdi-history', to: '/auditorias' },
+    )
+  }
   return items
 })
 

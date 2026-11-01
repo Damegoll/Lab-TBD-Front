@@ -56,6 +56,19 @@ function abrirCrear() {
   dialogo.value = true
 }
 
+function abrirEditar(tarifa) {
+  seleccionada.value = tarifa
+  formulario.value = {
+    tipoVehiculo: tarifa.tipoVehiculo,
+    precioPorMinuto: Number(tarifa.precioPorMinuto),
+    vigenteDesde: fechaLocal(tarifa.vigenteDesde),
+    vigenteHasta: fechaLocal(tarifa.vigenteHasta),
+  }
+  error.value = null
+  aviso.value = null
+  dialogo.value = true
+}
+
 async function guardar() {
   error.value = null
   const precioPorMinuto = Number(formulario.value.precioPorMinuto)
@@ -63,16 +76,28 @@ async function guardar() {
     error.value = 'Ingresa un precio válido y la fecha desde la que aplica la tarifa.'
     return
   }
+  if (
+    formulario.value.vigenteHasta
+    && new Date(formulario.value.vigenteHasta) <= new Date(formulario.value.vigenteDesde)
+  ) {
+    error.value = 'La fecha de término debe ser posterior a la fecha de inicio.'
+    return
+  }
   guardando.value = true
   try {
-    await http.post('/api/v1/tarifas', {
+    const body = {
       tipoVehiculo: formulario.value.tipoVehiculo,
       precioPorMinuto,
       vigenteDesde: fechaIso(formulario.value.vigenteDesde),
       vigenteHasta: fechaIso(formulario.value.vigenteHasta),
-    })
+    }
+    if (seleccionada.value) {
+      await http.put(`/api/v1/tarifas/${seleccionada.value.id}`, body)
+    } else {
+      await http.post('/api/v1/tarifas', body)
+    }
     dialogo.value = false
-    aviso.value = 'Tarifa creada.'
+    aviso.value = seleccionada.value ? 'Tarifa actualizada.' : 'Tarifa creada.'
     await cargar()
   } catch (e) {
     error.value = e.message
@@ -138,15 +163,25 @@ onMounted(cargar)
         </v-chip>
       </template>
       <template #item.acciones="{ item }">
-        <v-btn
-          v-if="item.activa"
-          icon="mdi-cancel"
-          size="small"
-          variant="text"
-          color="error"
-          aria-label="Desactivar tarifa"
-          @click="pedirDesactivacion(item)"
-        />
+        <div class="d-flex justify-end ga-1">
+          <v-btn
+            v-if="item.activa"
+            icon="mdi-pencil-outline"
+            size="small"
+            variant="text"
+            aria-label="Editar tarifa"
+            @click="abrirEditar(item)"
+          />
+          <v-btn
+            v-if="item.activa"
+            icon="mdi-cancel"
+            size="small"
+            variant="text"
+            color="error"
+            aria-label="Desactivar tarifa"
+            @click="pedirDesactivacion(item)"
+          />
+        </div>
       </template>
       <template #no-data>
         <div class="pa-8 text-center text-medium-emphasis">No hay tarifas registradas.</div>
@@ -156,7 +191,7 @@ onMounted(cargar)
 
   <v-dialog v-model="dialogo" max-width="540">
     <v-card>
-      <v-card-title class="pa-6 pb-2">Nueva tarifa</v-card-title>
+      <v-card-title class="pa-6 pb-2">{{ seleccionada ? 'Editar tarifa' : 'Nueva tarifa' }}</v-card-title>
       <v-card-text class="pa-6 pt-3">
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
         <v-form class="d-flex flex-column ga-3" @submit.prevent="guardar">
@@ -182,7 +217,9 @@ onMounted(cargar)
           />
           <div class="d-flex justify-end ga-2 mt-2">
             <v-btn variant="text" @click="dialogo = false">Cancelar</v-btn>
-            <v-btn type="submit" color="primary" :loading="guardando">Crear tarifa</v-btn>
+            <v-btn type="submit" color="primary" :loading="guardando">
+              {{ seleccionada ? 'Guardar cambios' : 'Crear tarifa' }}
+            </v-btn>
           </div>
         </v-form>
       </v-card-text>

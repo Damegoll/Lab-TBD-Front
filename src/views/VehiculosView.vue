@@ -11,9 +11,11 @@ const aviso = ref(null)
 const dialogo = ref(false)
 const dialogoEstado = ref(false)
 const dialogoAuditoria = ref(false)
+const dialogoBaja = ref(false)
 const seleccionado = ref(null)
 const auditoria = ref([])
 const errorAuditoria = ref(null)
+const motivoBaja = ref('')
 const formulario = ref({ codigo: '', tipo: 'BICICLETA', bateria: 100, estacionId: null })
 const cambioEstado = ref({ estado: 'DISPONIBLE', motivo: '' })
 const tipos = ['BICICLETA', 'SCOOTER']
@@ -24,7 +26,7 @@ const encabezados = [
   { title: 'Tipo', key: 'tipo' },
   { title: 'Estado', key: 'estado' },
   { title: 'Batería', key: 'bateria' },
-  { title: 'ID estación', key: 'estacionId' },
+  { title: 'Estación', key: 'estacionId' },
   { title: 'Acciones', key: 'acciones', sortable: false, align: 'end' },
 ]
 
@@ -144,6 +146,38 @@ async function verAuditoria(vehiculo) {
   }
 }
 
+function pedirBaja(vehiculo) {
+  seleccionado.value = vehiculo
+  motivoBaja.value = ''
+  error.value = null
+  dialogoBaja.value = true
+}
+
+async function darDeBaja() {
+  if (!seleccionado.value) return
+  const motivo = motivoBaja.value.trim()
+  if (!motivo) {
+    error.value = 'Describe el motivo de la baja del vehículo.'
+    return
+  }
+  guardando.value = true
+  error.value = null
+  try {
+    await http.delete(`/api/v1/vehiculos/${seleccionado.value.id}`, { motivo })
+    dialogoBaja.value = false
+    aviso.value = 'Vehículo dado de baja. El registro se conserva para mantener el historial.'
+    await cargar()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    guardando.value = false
+  }
+}
+
+function nombreEstacion(id) {
+  return estaciones.value.find((estacion) => estacion.id === id)?.nombre ?? (id == null ? 'Sin estación' : `Estación #${id}`)
+}
+
 function colorEstado(estado) {
   if (estado === 'DISPONIBLE') return 'success'
   if (estado === 'EN_USO') return 'primary'
@@ -168,7 +202,7 @@ onMounted(cargar)
     <v-btn color="primary" prepend-icon="mdi-plus" @click="abrirCrear">Nuevo vehículo</v-btn>
   </div>
 
-  <v-alert v-if="error && !dialogo && !dialogoEstado" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
+  <v-alert v-if="error && !dialogo && !dialogoEstado && !dialogoBaja" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
   <v-alert v-if="aviso" type="success" variant="tonal" closable class="mb-4">{{ aviso }}</v-alert>
 
   <v-card>
@@ -185,12 +219,21 @@ onMounted(cargar)
           <span>{{ value }}%</span>
         </div>
       </template>
-      <template #item.estacionId="{ value }">{{ value ?? 'Sin estación' }}</template>
+      <template #item.estacionId="{ value }">{{ nombreEstacion(value) }}</template>
       <template #item.acciones="{ item }">
         <div class="d-flex justify-end ga-1">
           <v-btn icon="mdi-pencil-outline" size="small" variant="text" aria-label="Editar vehículo" @click="abrirEditar(item)" />
           <v-btn icon="mdi-swap-horizontal" size="small" variant="text" aria-label="Cambiar estado" @click="abrirEstado(item)" />
           <v-btn icon="mdi-history" size="small" variant="text" aria-label="Ver auditoría" @click="verAuditoria(item)" />
+          <v-btn
+            v-if="item.estado !== 'DADO_DE_BAJA'"
+            icon="mdi-delete-off-outline"
+            size="small"
+            variant="text"
+            color="error"
+            aria-label="Dar de baja vehículo"
+            @click="pedirBaja(item)"
+          />
         </div>
       </template>
       <template #no-data>
@@ -249,6 +292,24 @@ onMounted(cargar)
           </div>
         </v-form>
       </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="dialogoBaja" max-width="500">
+    <v-card>
+      <v-card-title class="pa-6 pb-2">Dar de baja vehículo</v-card-title>
+      <v-card-text class="pa-6 pt-3">
+        <p class="mb-4">
+          El vehículo {{ seleccionado?.codigo }} quedará como dado de baja. No se elimina físicamente y el cambio quedará auditado.
+        </p>
+        <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
+        <v-textarea v-model="motivoBaja" label="Motivo de la baja" maxlength="500" rows="3" required />
+      </v-card-text>
+      <v-card-actions class="px-6 pb-5">
+        <v-spacer />
+        <v-btn variant="text" @click="dialogoBaja = false">Cancelar</v-btn>
+        <v-btn color="error" :loading="guardando" @click="darDeBaja">Confirmar baja</v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 
